@@ -120,6 +120,17 @@ def publish_discovery_messages(client):
         "device": device_info
     }
     client.publish("homeassistant/number/idotmatrix_3f_4f/countdown_input/config", json.dumps(countdown_number_config), retain=True)
+
+    # Sync Time Button
+    sync_time_config = {
+        "name": "iDotMatrix Sync Time",
+        "command_topic": "idotmatrix/display/sync_time/command",
+        "payload_press": "SYNC",
+        "unique_id": "idotmatrix_sync_time_button",
+        "device": device_info
+    }
+    client.publish("homeassistant/button/idotmatrix_3f_4f/sync_time/config", json.dumps(sync_time_config), retain=True)
+
     logging.info("Published MQTT Auto-Discovery components!")
 
 # Ensure we're using MQTT v1 callback format compatible with paho-mqtt 2.1.0
@@ -196,6 +207,12 @@ async def handle_commands(idotmatrix_client):
                 minutes = min(59, int(float(payload)))
                 if minutes > 0:
                     await idotmatrix_client.countdown.start(minutes=minutes)
+
+            elif topic == "idotmatrix/display/sync_time/command":
+                from datetime import datetime
+                await idotmatrix_client.common.set_time(datetime.now())
+                logging.info(f"Target clock synced to host time: {datetime.now().strftime('%H:%M:%S')}")
+
                     
         except Exception as e:
             logging.error(f"Error handling command {topic}: {e}")
@@ -217,6 +234,11 @@ async def main():
     try:
         await idotmatrix_client.connect()
         logging.info("Successfully connected to iDotMatrix!")
+        
+        # Auto-Sync time silently on successful boot
+        from datetime import datetime
+        await idotmatrix_client.common.set_time(datetime.now())
+        logging.info("Device clock synchronized with host server time during startup.")
     except Exception as e:
         logging.error(f"Failed to connect initially, auto-reconnect should handle it: {e}")
 
