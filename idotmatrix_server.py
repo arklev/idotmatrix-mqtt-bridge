@@ -186,22 +186,29 @@ async def handle_commands(idotmatrix_client):
                     await idotmatrix_client.effect.show(effect_idx, colours)
 
             elif topic == "idotmatrix/display/image/command":
-                img_path = IMAGE_DIR / payload
-                if img_path.exists() and img_path.is_file():
-                    logging.info(f"Loading image from {img_path}")
-                    if img_path.suffix.lower() == '.gif':
-                        # Prepare device for GIF according to DigitalPictureFrame implementation
-                        await idotmatrix_client.image.set_mode(0) # Disable DIY
-                        await idotmatrix_client.color.show_color((0, 0, 0))
-                        await idotmatrix_client.reset()
-                        await idotmatrix_client.gif.upload_gif_file(img_path, ResizeMode.FILL)
-                        await asyncio.sleep(3)
-                    else:
-                        # Prepare device for static Image according to DigitalPictureFrame implementation
-                        await idotmatrix_client.image.set_mode(1) # Enable DIY
-                        await idotmatrix_client.image.upload_image_file(img_path, ResizeMode.FILL)
+                clean_payload = payload.strip().strip("'\"").lower()
+                clean_name = Path(clean_payload).name.lower()
+
+                if clean_payload in ["clear", "reset", "none", "off", ""] or clean_name in ["clear", "reset"]:
+                    logging.info(f"Clearing image display (payload='{payload}'). Returning to clock mode.")
+                    await idotmatrix_client.clock.show()
                 else:
-                    logging.error(f"Image not found at {img_path}")
+                    img_path = IMAGE_DIR / payload
+                    if img_path.exists() and img_path.is_file():
+                        logging.info(f"Loading image from {img_path}")
+                        if img_path.suffix.lower() == '.gif':
+                            # Prepare device for GIF according to DigitalPictureFrame implementation
+                            await idotmatrix_client.image.set_mode(0) # Disable DIY
+                            await idotmatrix_client.color.show_color((0, 0, 0))
+                            await idotmatrix_client.reset()
+                            await idotmatrix_client.gif.upload_gif_file(img_path, ResizeMode.FILL)
+                            await asyncio.sleep(3)
+                        else:
+                            # Prepare device for static Image according to DigitalPictureFrame implementation
+                            await idotmatrix_client.image.set_mode(1) # Enable DIY
+                            await idotmatrix_client.image.upload_image_file(img_path, ResizeMode.FILL)
+                    else:
+                        logging.error(f"Image not found at {img_path}")
 
             elif topic == "idotmatrix/display/countdown/command":
                 minutes = min(59, int(float(payload)))
