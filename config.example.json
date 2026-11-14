@@ -4,5 +4,47 @@
     "mqtt_port": 1883,
     "mqtt_user": "mqtt_user",
     "mqtt_pass": "mqtt_password",
-    "image_dir": "images"
+    "image_dir": "images",
+    "web_host": "0.0.0.0",
+    "web_port": 8099,
+    "device": {
+        "screen_size": 32,
+        "flip_screen": false,
+        "auto_sync_interval_minutes": 60,
+        "sync_on_connect": true,
+        "brightness": 80
+    },
+    "clock": {
+        "style": "RGBSwipeOutline",
+        "color": [255, 255, 255],
+        "show_date": true,
+        "hour24": true
+    },
+    "text": {
+        "mode": "MARQUEE",
+        "speed": 95,
+        "font_size": 16,
+        "color_mode": "WHITE",
+        "text_color": [255, 255, 255],
+        "bg_color": null
+    },
+    "eco": {
+        "enabled": false,
+        "start_hour": 22,
+        "start_minute": 0,
+        "end_hour": 6,
+        "end_minute": 0,
+        "brightness": 10
+    },
+    "image": {
+        "resize_mode": "FILL",
+        "palletize": true
+    },
+    "override": {
+        "locked": false,
+        "lock_until": null,
+        "allow_critical_alerts": [
+            "bomb.gif"
+        ]
+    }
 }
