@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iDotMatrix Control Center</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface-2: #1f2630;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-hover: #79b8ff;
+      --green: #3fb950;
+      --red: #f85149;
+      --amber: #d29922;
+      --purple: #a371f7;
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .pixel-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, #238636, #58a6ff, #a371f7);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      padding: 5px;
+    }
+    .pixel-logo span {
+      background: rgba(255,255,255,0.9);
+      border-radius: 1px;
+    }
+    .brand h1 { font-size: 18px; margin: 0; }
+    .brand small { color: var(--muted); font-size: 12px; display: block; }
+    .status-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+    .dot.ok { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .dot.err { background: var(--red); }
+    .dot.warn { background: var(--amber); }
+
+    main { max-width: 1280px; margin: 0 auto; padding: 20px 24px 48px; }
+
+    .quick-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 18px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      align-items: center;
+    }
+    .quick-group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .quick-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; width: 100%; }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .tab-btn:hover { color: var(--text); background: var(--surface); }
+    .tab-btn.active {
+      color: var(--text);
+      background: var(--surface-2);
+      border-color: var(--border);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+    .card h2 {
+      margin: 0 0 14px;
+      font-size: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    button {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 8px 13px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    button:hover { background: #29323f; border-color: #484f58; }
+    button.primary { background: #1f6feb; border-color: #388bfd; color: #fff; }
+    button.primary:hover { background: #388bfd; }
+    button.success { background: #238636; border-color: #2ea043; color: #fff; }
+    button.success:hover { background: #2ea043; }
+    button.warn { background: #9e6a03; border-color: #d29922; color: #fff; }
+    button.danger { background: #8e2624; border-color: #f85149; color: #fff; }
+    button.danger:hover { background: #da3633; }
+    button.sm { padding: 5px 9px; font-size: 12px; }
+
+    .form-row { margin-bottom: 12px; }
+    .form-row label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .form-inline { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    input[type="text"], input[type="number"], input[type="password"], select, textarea {
+      width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 13px;
+    }
+    input[type="color"] {
+      width: 44px;
+      height: 34px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      border-radius: 6px;
+      padding: 2px;
+      cursor: pointer;
+    }
+    input[type="range"] { width: 140px; accent-color: var(--accent); }
+    .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+    .checkbox-row input { width: auto; }
+
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+      color: var(--muted);
+      margin-bottom: 16px;
+      transition: border-color .15s, background .15s;
+      cursor: pointer;
+    }
+    .upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(88, 166, 255, 0.08);
+      color: var(--text);
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 14px;
+    }
+    .img-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .img-card.active-img { border-color: var(--green); box-shadow: 0 0 0 1px var(--green); }
+    .img-preview {
+      width: 100%;
+      aspect-ratio: 1;
+      background: #000;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .img-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+    .img-name {
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .img-meta { font-size: 11px; color: var(--muted); }
+    .img-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .log-box {
+      background: #090c10;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+      height: 360px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+    .log-line { margin-bottom: 3px; }
+    .log-INFO { color: #c9d1d9; }
+    .log-WARNING { color: var(--amber); }
+    .log-ERROR { color: var(--red); }
+
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--surface-2);
+      border: 1px solid var(--accent);
+      color: var(--text);
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all .2s;
+      z-index: 200;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.error { border-color: var(--red); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="pixel-logo"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <div>
+        <h1>iDotMatrix Control Center</h1>
+        <small id="subtitle">Loading device status...</small>
+      </div>
+    </div>
+    <div class="status-bar">
+      <span class="badge"><span class="dot" id="bleDot"></span> BLE: <strong id="bleState">-</strong></span>
+      <span class="badge"><span class="dot" id="mqttDot"></span> MQTT: <strong id="mqttState">-</strong></span>
+      <span class="badge"><span class="dot" id="lockDot"></span> Lock: <strong id="lockState">Unlocked</strong></span>
+      <span class="badge">Last Sync: <strong id="lastSync">Never</strong></span>
+      <button class="primary" onclick="syncTime()">Sync Time Now</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="quick-bar">
+      <div class="quick-group">
+        <span class="quick-label">Power &amp; Mode</span>
+        <button class="success" onclick="setPower(true)">Power On</button>
+        <button onclick="setPower(false)">Power Off</button>
+        <button class="primary" onclick="showClock()">Show Clock</button>
+        <button onclick="clearImage()">Clear Image</button>
+      </div>
+      <div class="quick-group">
+        <span class="quick-label">Brightness &amp; Fill Color</span>
+        <input type="range" id="brightnessSlider" min="5" max="100" value="80" oninput="document.getElementById('brightnessVal').textContent=this.value+'%'" onchange="setBrightness(this.value)" />
+        <strong id="brightnessVal">80%</strong>
+        <input type="color" id="quickColor" value="#ffffff" />
+        <button onclick="setQuickColor()">Fill</button>
+      </div>
+      <div class="quick-group">
+        <span class="quick-label">HA Manual Override Lock</span>
+        <button onclick="setOverride(false, null, true)">HA Auto</button>
+        <button class="warn sm" onclick="setOverride(true, 15)">Lock 15m</button>
+        <button class="warn sm" onclick="setOverride(true, 60)">Lock 1h</button>
+        <button class="warn sm" onclick="setOverride(true, null)">Hold</button>
+      </div>
+      <div class="quick-group">
+        <span class="quick-label">Hardware</span>
+        <button id="flipBtn" onclick="toggleFlip()">Flip 180°</button>
+        <button onclick="reconnectBle()">Reconnect BLE</button>
+        <button class="danger" onclick="resetDevice()">Reset</button>
+      </div>
+    </section>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="gallery" onclick="switchTab('gallery', this)">Images &amp; GIFs</button>
+      <button class="tab-btn" data-tab="studio" onclick="switchTab('studio', this)">Clock &amp; Text Studio</button>
+      <button class="tab-btn" data-tab="tools" onclick="switchTab('tools', this)">Tools &amp; Eco Mode</button>
+      <button class="tab-btn" data-tab="settings" onclick="switchTab('settings', this)">Settings &amp; Logs</button>
+    </div>
+
+    <!-- IMAGES & GIFS TAB -->
+    <section id="tab-gallery" class="tab-panel active">
+      <div class="card">
+        <h2>
+          <span>Image &amp; GIF Library</span>
+          <div class="form-inline">
+            <label style="font-size:12px;color:var(--muted)">Resize:</label>
+            <select id="imgResizeMode" style="width:auto">
+              <option value="FILL">FILL</option>
+              <option value="FIT">FIT</option>
+              <option value="STRETCH">STRETCH</option>
+            </select>
+            <label class="checkbox-row"><input type="checkbox" id="imgPalletize" checked /> Palletize GIF</label>
+          </div>
+        </h2>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+          <input type="file" id="fileInput" accept=".gif,.png,.jpg,.jpeg,.bmp,.webp" style="display:none" onchange="uploadFiles(this.files)" />
+          Drop a <strong>.gif</strong> or <strong>.png</strong> here or click to upload to <code>images/</code>
+        </div>
+        <div class="gallery" id="imageGallery"></div>
+      </div>
+    </section>
+
+    <!-- CLOCK & TEXT STUDIO TAB -->
+    <section id="tab-studio" class="tab-panel">
+      <div class="grid">
+        <div class="card">
+          <h2>Clock Studio</h2>
+          <div class="form-row">
+            <label>Clock Style</label>
+            <select id="clockStyle"></select>
+          </div>
+          <div class="form-row form-inline">
+            <div>
+              <label>Clock Color</label>
+              <input type="color" id="clockColor" value="#ffffff" />
+            </div>
+            <label class="checkbox-row"><input type="checkbox" id="clockShowDate" checked /> Show Date</label>
+            <label class="checkbox-row"><input type="checkbox" id="clockHour24" checked /> 24-Hour Format</label>
+          </div>
+          <div class="form-inline">
+            <button class="primary" onclick="applyClock(false)">Apply Clock</button>
+            <button class="success" onclick="applyClock(true)">Apply &amp; Save as Default</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Text Ticker Studio</h2>
+          <div class="form-row">
+            <label>Message Text</label>
+            <input type="text" id="textInput" placeholder="Hello World!" />
+          </div>
+          <div class="form-row form-inline">
+            <div style="flex:1;min-width:140px">
+              <label>Animation Mode</label>
+              <select id="textMode"></select>
+            </div>
+            <div style="flex:1;min-width:140px">
+              <label>Color Mode</label>
+              <select id="textColorMode"></select>
+            </div>
+          </div>
+          <div class="form-row form-inline">
+            <div>
+              <label>Text Color</label>
+              <input type="color" id="textColor" value="#ffffff" />
+            </div>
+            <div>
+              <label>Background</label>
+              <div class="form-inline">
+                <input type="color" id="textBgColor" value="#000000" />
+                <label class="checkbox-row"><input type="checkbox" id="textUseBg" /> Enable BG</label>
+              </div>
+            </div>
+          </div>
+          <div class="form-row form-inline">
+            <div style="flex:1">
+              <label>Speed (<span id="textSpeedVal">95</span>)</label>
+              <input type="range" id="textSpeed" min="1" max="100" value="95" oninput="document.getElementById('textSpeedVal').textContent=this.value" />
+            </div>
+            <div style="flex:1">
+              <label>Font Size (<span id="textFontVal">16</span>)</label>
+              <input type="range" id="textFontSize" min="8" max="48" value="16" oninput="document.getElementById('textFontVal').textContent=this.value" />
+            </div>
+          </div>
+          <div class="form-inline">
+            <button class="primary" onclick="sendText(false)">Send Text</button>
+            <button class="warn" onclick="sendText(false, 30)">Send &amp; Lock 30m</button>
+            <button class="success" onclick="sendText(true)">Save Style Default</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Built-in Visual Effects</h2>
+          <div class="form-row">
+            <label>Effect Style</label>
+            <select id="effectStyle"></select>
+          </div>
+          <div class="form-inline">
+            <button class="primary" onclick="applyEffect(null)">Run Effect</button>
+            <button class="warn" onclick="applyEffect(30)">Run &amp; Lock 30m</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TOOLS & ECO TAB -->
+    <section id="tab-tools" class="tab-panel">
+      <div class="grid">
+        <div class="card">
+          <h2>Countdown Timer</h2>
+          <div class="form-row form-inline">
+            <div style="width:90px">
+              <label>Minutes</label>
+              <input type="number" id="cdMinutes" min="0" max="59" value="5" />
+            </div>
+            <div style="width:90px">
+              <label>Seconds</label>
+              <input type="number" id="cdSeconds" min="0" max="59" value="0" />
+            </div>
+          </div>
+          <div class="form-inline">
+            <button class="primary" onclick="startCountdown()">Start Countdown</button>
+            <button class="danger" onclick="stopCountdown()">Stop</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Chronograph (Stopwatch)</h2>
+          <div class="form-inline">
+            <button class="success" onclick="chrono('start')">Start / Restart</button>
+            <button onclick="chrono('pause')">Pause</button>
+            <button onclick="chrono('resume')">Resume</button>
+            <button class="danger" onclick="chrono('reset')">Reset</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Scoreboard</h2>
+          <div class="form-row form-inline">
+            <div style="width:110px">
+              <label>Team A (0-999)</label>
+              <input type="number" id="score1" min="0" max="999" value="0" />
+            </div>
+            <div style="width:110px">
+              <label>Team B (0-999)</label>
+              <input type="number" id="score2" min="0" max="999" value="0" />
+            </div>
+          </div>
+          <button class="primary" onclick="showScoreboard()">Update Scoreboard</button>
+        </div>
+
+        <div class="card">
+          <h2>Eco Night Dimming Mode</h2>
+          <div class="form-row">
+            <label class="checkbox-row"><input type="checkbox" id="ecoEnabled" /> Enable Scheduled Eco Mode</label>
+          </div>
+          <div class="form-row form-inline">
+            <div><label>Start Hour</label><input type="number" id="ecoStartH" min="0" max="23" value="22" style="width:72px" /></div>
+            <div><label>Min</label><input type="number" id="ecoStartM" min="0" max="59" value="0" style="width:72px" /></div>
+            <div><label>End Hour</label><input type="number" id="ecoEndH" min="0" max="23" value="6" style="width:72px" /></div>
+            <div><label>Min</label><input type="number" id="ecoEndM" min="0" max="59" value="0" style="width:72px" /></div>
+            <div><label>Eco Brightness</label><input type="number" id="ecoBright" min="0" max="100" value="10" style="width:85px" /></div>
+          </div>
+          <button class="success" onclick="saveEco()">Save &amp; Apply Eco Mode</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS & LOGS TAB -->
+    <section id="tab-settings" class="tab-panel">
+      <div class="grid">
+        <div class="card">
+          <h2>Device &amp; Time-Sync Settings</h2>
+          <div class="form-row">
+            <label>Bluetooth MAC Address</label>
+            <input type="text" id="cfgMac" />
+          </div>
+          <div class="form-row form-inline">
+            <div style="flex:1">
+              <label>Screen Size</label>
+              <select id="cfgScreenSize">
+                <option value="16">16x16</option>
+                <option value="32">32x32</option>
+                <option value="64">64x64</option>
+              </select>
+            </div>
+            <div style="flex:1">
+              <label>Auto-Sync Interval (minutes, 0=off)</label>
+              <input type="number" id="cfgSyncInterval" min="0" max="1440" />
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="checkbox-row"><input type="checkbox" id="cfgSyncOnConnect" /> Auto-Sync Time on BLE Connect</label>
+          </div>
+          <div class="form-row">
+            <label>Critical Alerts Allowed During Lock (comma-separated)</label>
+            <input type="text" id="cfgCriticalAlerts" placeholder="bomb.gif" />
+          </div>
+          <div class="form-row form-inline">
+            <div style="flex:2"><label>MQTT Broker Host</label><input type="text" id="cfgMqttHost" /></div>
+            <div style="flex:1"><label>Port</label><input type="number" id="cfgMqttPort" /></div>
+          </div>
+          <div class="form-row form-inline">
+            <div style="flex:1"><label>MQTT User</label><input type="text" id="cfgMqttUser" /></div>
+            <div style="flex:1"><label>MQTT Password</label><input type="password" id="cfgMqttPass" /></div>
+          </div>
+          <button class="success" onclick="saveSettings()">Save Settings</button>
+        </div>
+
+        <div class="card">
+          <h2>
+            <span>Live Logs</span>
+            <div class="form-inline">
+              <label class="checkbox-row" style="font-size:12px"><input type="checkbox" id="autoRefreshLogs" checked /> Auto-refresh</label>
+              <button class="sm" onclick="loadLogs()">Refresh</button>
+            </div>
+          </h2>
+          <div class="log-box" id="logBox">Loading logs...</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast"></div>
+
+  <script>
+    let currentStatus = null;
+    let optionsLoaded = false;
+
+    function rgbToHex(arr) {
+      if (!Array.isArray(arr) || arr.length !== 3) return "#ffffff";
+      return "#" + arr.map(v => Math.max(0, Math.min(255, Number(v))).toString(16).padStart(2, "0")).join("");
+    }
+
+    function showToast(msg, isError = false) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.className = isError ? "show error" : "show";
+      clearTimeout(el._t);
+      el._t = setTimeout(() => { el.className = ""; }, 3000);
+    }
+
+    async function api(path, method = "GET", body = null) {
+      const opts = { method, headers: {} };
+      if (body !== null) {
+        opts.headers["Content-Type"] = "application/json";
+        opts.body = JSON.stringify(body);
+      }
+      const res = await fetch(path, opts);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+      return data;
+    }
+
+    function switchTab(name, btn) {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("tab-" + name).classList.add("active");
+      if (name === "settings") {
+        loadSettings();
+        loadLogs();
+      }
+    }
+
+    function populateOptions(opts) {
+      if (optionsLoaded || !opts) return;
+      optionsLoaded = true;
+      const fillSelect = (id, items) => {
+        const sel = document.getElementById(id);
+        sel.innerHTML = "";
+        items.forEach(item => {
+          const opt = document.createElement("option");
+          opt.value = item.name;
+          opt.textContent = `${item.value}: ${item.name}`;
+          sel.appendChild(opt);
+        });
+      };
+      fillSelect("clockStyle", opts.clock_styles || []);
+      fillSelect("textMode", opts.text_modes || []);
+      fillSelect("textColorMode", opts.text_color_modes || []);
+      fillSelect("effectStyle", opts.effect_styles || []);
+    }
+
+    function renderStatus(s) {
+      currentStatus = s;
+      populateOptions(s.options);
+
+      const bleOk = !!s.ble_connected;
+      document.getElementById("bleDot").className = "dot " + (bleOk ? "ok" : "err");
+      document.getElementById("bleState").textContent = bleOk ? "Connected" : "Disconnected";
+
+      const mqttOk = !!s.mqtt_connected;
+      document.getElementById("mqttDot").className = "dot " + (mqttOk ? "ok" : "err");
+      document.getElementById("mqttState").textContent = mqttOk ? "Connected" : "Offline";
+
+      const locked = !!s.override_locked;
+      document.getElementById("lockDot").className = "dot " + (locked ? "warn" : "ok");
+      document.getElementById("lockState").textContent = locked
+        ? (s.override_lock_until ? `Locked until ${s.override_lock_until.split("T")[1]}` : "Locked")
+        : "HA Auto";
+
+      document.getElementById("lastSync").textContent = s.last_time_sync ? s.last_time_sync.replace("T", " ") : "Never";
+      document.getElementById("subtitle").textContent =
+        `Mode: ${s.current_mode} | Image: ${s.current_image} | Power: ${s.power_on ? "ON" : "OFF"} | MAC: ${s.device_mac || "unset"}`;
+
+      document.getElementById("brightnessSlider").value = s.brightness || 80;
+      document.getElementById("brightnessVal").textContent = (s.brightness || 80) + "%";
+      document.getElementById("flipBtn").textContent = s.flip_screen ? "Flip 180° (ON)" : "Flip 180° (OFF)";
+
+      if (s.clock) {
+        if (s.clock.style) document.getElementById("clockStyle").value = s.clock.style;
+        document.getElementById("clockColor").value = rgbToHex(s.clock.color);
+        document.getElementById("clockShowDate").checked = !!s.clock.show_date;
+        document.getElementById("clockHour24").checked = !!s.clock.hour24;
+      }
+      if (s.eco) {
+        document.getElementById("ecoEnabled").checked = !!s.eco.enabled;
+        document.getElementById("ecoStartH").value = s.eco.start_hour ?? 22;
+        document.getElementById("ecoStartM").value = s.eco.start_minute ?? 0;
+        document.getElementById("ecoEndH").value = s.eco.end_hour ?? 6;
+        document.getElementById("ecoEndM").value = s.eco.end_minute ?? 0;
+        document.getElementById("ecoBright").value = s.eco.brightness ?? 10;
+      }
+      if (s.image_defaults) {
+        document.getElementById("imgResizeMode").value = s.image_defaults.resize_mode || "FILL";
+        document.getElementById("imgPalletize").checked = s.image_defaults.palletize !== false;
+      }
+    }
+
+    async function refreshStatus() {
+      try {
+        const s = await api("/api/status");
+        renderStatus(s);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadImages() {
+      try {
+        const data = await api("/api/images");
+        const gallery = document.getElementById("imageGallery");
+        gallery.innerHTML = "";
+        (data.images || []).forEach(img => {
+          const card = document.createElement("div");
+          const isCurrent = currentStatus && currentStatus.current_image === img.name;
+          card.className = "img-card" + (isCurrent ? " active-img" : "");
+          const dims = img.dimensions ? `${img.dimensions[0]}x${img.dimensions[1]}` : "?";
+          const kb = (img.size_bytes / 1024).toFixed(1) + " KB";
+          card.innerHTML = `
+            <div class="img-preview"><img src="${img.url}?t=${Date.now()}" alt="${img.name}" /></div>
+            <div class="img-name" title="${img.name}">${img.name}</div>
+            <div class="img-meta">${dims} • ${kb}</div>
+            <div class="img-actions">
+              <button class="primary sm" onclick="displayImage('${img.name}', null)">Show</button>
+              <button class="warn sm" onclick="displayImage('${img.name}', 30)">Lock 30m</button>
+              <button class="danger sm" onclick="deleteImage('${img.name}')">Del</button>
+            </div>
+          `;
+          gallery.appendChild(card);
+        });
+      } catch (e) {
+        showToast(e.message, true);
+      }
+    }
+
+    async function syncTime() {
+      try { renderStatus(await api("/api/sync-time", "POST")); showToast("Clock time synced!"); }
+      catch (e) { showToast(e.message, true); }
+    }
+    async function setPower(state) {
+      try { renderStatus(await api("/api/power", "POST", { state })); showToast(`Display turned ${state ? "ON" : "OFF"}`); }
+      catch (e) { showToast(e.message, true); }
+    }
+    async function setBrightness(val) {
+      try { renderStatus(await api("/api/power", "POST", { brightness: Number(val) })); showToast(`Brightness set to ${val}%`); }
+      catch (e) { showToast(e.message, true); }
+    }
+    async function setQuickColor() {
+      const color = document.getElementById("quickColor").value;
+      try { renderStatus(await api("/api/power", "POST", { color })); showToast(`Color applied`); }
+      catch (e) { showToast(e.message, true); }
+    }
+    async function showClock() {
+      try { renderStatus(await api("/api/clock", "POST", {})); await loadImages(); showToast("Clock displayed"); }
+      catch (e) { showToast(e.message, true); }
+    }
+    async function clearImage() {
+      try { renderStatus(await api("/api/image", "POST", { name: "clear" })); await loadImages(); showToast("Cleared image"); }
+      catch (e) { showToast(e.message, true); }
+    }
+    async function setOverride(locked, minutes, returnAuto = false) {
+      try {
+        renderStatus(await api("/api/override", "POST", { locked, minutes, return_to_ha_auto: returnAuto }));
+        showToast(locked ? "Manual Override Locked" : "Returned to HA Auto");
+      } catch (e) { showToast(e.message, true); }
+    }
+    async function toggleFlip() {
+      const next = !(currentStatus && currentStatus.flip_screen);
+      try { renderStatus(await api("/api/flip", "POST", { flip: next })); showToast(`Screen flip ${next ? "ON" : "OFF"}`); }
+      catch (e) { showToast(e.message, true); }
+    }
+    async function reconnectBle() {
+      try { showToast("Reconnecting BLE..."); renderStatus(await api("/api/reconnect", "POST")); showToast("BLE Reconnected"); }
+      catch (e) { showToast(e.message, true); }
+    }
+    async function resetDevice() {
+      try { renderStatus(await api("/api/reset", "POST")); showToast("Device reset sent"); }
+      catch (e) { showToast(e.message, true); }
+    }
+
+    async function displayImage(name, lockMinutes) {
+      try {
+        const resize_mode = document.getElementById("imgResizeMode").value;
+        const palletize = document.getElementById("imgPalletize").checked;
+        renderStatus(await api("/api/image", "POST", { name, resize_mode, palletize, lock_minutes: lockMinutes }));
+        await loadImages();
+        showToast(`Displayed ${name}`);
+      } catch (e) { showToast(e.message, true); }
+    }
+
+    async function deleteImage(name) {
+      if (!confirm(`Delete ${name} from images/?`)) return;
+      try {
+        await api(`/api/images/${encodeURIComponent(name)}`, "DELETE");
+        await loadImages();
+        showToast(`Deleted ${name}`);
+      } catch (e) { showToast(e.message, true); }
+    }
+
+    async function uploadFiles(files) {
+      for (const f of files) {
+        const fd = new FormData();
+        fd.append("file", f);
+        try {
+          const res = await fetch("/api/images/upload", { method: "POST", body: fd });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || "Upload failed");
+          showToast(`Uploaded ${data.image.name}`);
+        } catch (e) { showToast(e.message, true); }
+      }
+      await loadImages();
+    }
+
+    async function applyClock(saveDefault) {
+      try {
+        const body = {
+          style: document.getElementById("clockStyle").value,
+          color: document.getElementById("clockColor").value,
+          show_date: document.getElementById("clockShowDate").checked,
+          hour24: document.getElementById("clockHour24").checked,
+          save_default: saveDefault,
+        };
+        renderStatus(await api("/api/clock", "POST", body));
+        showToast(saveDefault ? "Clock applied & saved as default" : "Clock applied");
+      } catch (e) { showToast(e.message, true); }
+    }
+
+    async function sendText(saveDefault, lockMinutes = null) {
+      const text = document.getElementById("textInput").value.trim();
+      if (!text) return showToast("Enter text first", true);
+      try {
+        const body = {
+          text,
+          mode: document.getElementById("textMode").value,
+          color_mode: document.getElementById("textColorMode").value,
+          text_color: document.getElementById("textColor").value,
+          bg_color: document.getElementById("textUseBg").checked ? document.getElementById("textBgColor").value : null,
+          speed: Number(document.getElementById("textSpeed").value),
+          font_size: Number(document.getElementById("textFontSize").value),
+          save_default: saveDefault,
+          lock_minutes: lockMinutes,
+        };
+        renderStatus(await api("/api/text", "POST", body));
+        showToast(saveDefault ? "Text sent & style saved" : "Text sent to display");
+      } catch (e) { showToast(e.message, true); }
+    }
+
+    async function applyEffect(lockMinutes) {
+      try {
+        const style = document.getElementById("effectStyle").value;
+        renderStatus(await api("/api/effect", "POST", { style, lock_minutes: lockMinutes }));
+        showToast(`Effect ${style} started`);
+      } catch (e) { showToast(e.message, true); }
+    }
+
+    async function startCountdown() {
+      try {
+        const minutes = Number(document.getElementById("cdMinutes").value);
+        const seconds = Number(document.getElementById("cdSeconds").value);
+        renderStatus(await api("/api/countdown", "POST", { minutes, seconds }));
+        showToast("Countdown started");
+      } catch (e) { showToast(e.message, true); }
+    }
+    async function stopCountdown() {
+      try { renderStatus(await api("/api/countdown", "POST", { minutes: 0, seconds: 0 })); showToast("Countdown stopped"); }
+      catch (e) { showToast(e.message, true); }
+    }
+    async function chrono(action) {
+      try { renderStatus(await api("/api/chronograph", "POST", { action })); showToast(`Chronograph: ${action}`); }
+      catch (e) { showToast(e.message, true); }
+    }
+    async function showScoreboard() {
+      try {
+        const count1 = Number(document.getElementById("score1").value);
+        const count2 = Number(document.getElementById("score2").value);
+        renderStatus(await api("/api/scoreboard", "POST", { count1, count2 }));
+        showToast("Scoreboard updated");
+      } catch (e) { showToast(e.message, true); }
+    }
+    async function saveEco() {
+      try {
+        const body = {
+          enabled: document.getElementById("ecoEnabled").checked,
+          start_hour: Number(document.getElementById("ecoStartH").value),
+          start_minute: Number(document.getElementById("ecoStartM").value),
+          end_hour: Number(document.getElementById("ecoEndH").value),
+          end_minute: Number(document.getElementById("ecoEndM").value),
+          brightness: Number(document.getElementById("ecoBright").value),
+          save_default: true,
+        };
+        renderStatus(await api("/api/eco", "POST", body));
+        showToast("Eco mode applied & saved");
+      } catch (e) { showToast(e.message, true); }
+    }
+
+    async function loadSettings() {
+      try {
+        const cfg = await api("/api/settings");
+        document.getElementById("cfgMac").value = cfg.device_mac || "";
+        document.getElementById("cfgScreenSize").value = String(cfg.device?.screen_size || 32);
+        document.getElementById("cfgSyncInterval").value = cfg.device?.auto_sync_interval_minutes ?? 60;
+        document.getElementById("cfgSyncOnConnect").checked = cfg.device?.sync_on_connect !== false;
+        document.getElementById("cfgCriticalAlerts").value = (cfg.override?.allow_critical_alerts || []).join(", ");
+        document.getElementById("cfgMqttHost").value = cfg.mqtt_server || "";
+        document.getElementById("cfgMqttPort").value = cfg.mqtt_port || 1883;
+        document.getElementById("cfgMqttUser").value = cfg.mqtt_user || "";
+        document.getElementById("cfgMqttPass").value = cfg.mqtt_pass || "";
+      } catch (e) { showToast(e.message, true); }
+    }
+
+    async function saveSettings() {
+      try {
+        const alerts = document.getElementById("cfgCriticalAlerts").value
+          .split(",").map(s => s.trim()).filter(Boolean);
+        const patch = {
+          device_mac: document.getElementById("cfgMac").value.trim(),
+          mqtt_server: document.getElementById("cfgMqttHost").value.trim(),
+          mqtt_port: Number(document.getElementById("cfgMqttPort").value),
+          mqtt_user: document.getElementById("cfgMqttUser").value.trim(),
+          mqtt_pass: document.getElementById("cfgMqttPass").value,
+          device: {
+            screen_size: Number(document.getElementById("cfgScreenSize").value),
+            auto_sync_interval_minutes: Number(document.getElementById("cfgSyncInterval").value),
+            sync_on_connect: document.getElementById("cfgSyncOnConnect").checked,
+          },
+          override: { allow_critical_alerts: alerts },
+        };
+        await api("/api/settings", "PUT", patch);
+        await refreshStatus();
+        showToast("Settings saved! (Restart required if MQTT/MAC changed)");
+      } catch (e) { showToast(e.message, true); }
+    }
+
+    async function loadLogs() {
+      try {
+        const data = await api("/api/logs?limit=200");
+        const box = document.getElementById("logBox");
+        box.innerHTML = "";
+        (data.logs || []).forEach(entry => {
+          const line = document.createElement("div");
+          line.className = `log-line log-${entry.level}`;
+          line.textContent = `[${entry.timestamp}] ${entry.level}: ${entry.message}`;
+          box.appendChild(line);
+        });
+        box.scrollTop = box.scrollHeight;
+      } catch (e) {}
+    }
+
+    const uz = document.getElementById("uploadZone");
+    uz.addEventListener("dragover", e => { e.preventDefault(); uz.classList.add("dragover"); });
+    uz.addEventListener("dragleave", () => uz.classList.remove("dragover"));
+    uz.addEventListener("drop", e => {
+      e.preventDefault();
+      uz.classList.remove("dragover");
+      if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
+    });
+
+    (async function init() {
+      await refreshStatus();
+      await loadImages();
+      setInterval(refreshStatus, 5000);
+      setInterval(() => {
+        if (document.getElementById("tab-settings").classList.contains("active") &&
+            document.getElementById("autoRefreshLogs").checked) {
+          loadLogs();
+        }
+      }, 4000);
+    })();
+  </script>
+</body>
+</html>
