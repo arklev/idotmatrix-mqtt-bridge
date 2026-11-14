@@ -1,32 +1,59 @@
-# iDotMatrix MQTT Bridge 
+# iDotMatrix Control Center & MQTT Bridge
 
-A standalone Python-based MQTT Bridge that seamlessly connects generic iDotMatrix LED displays directly to Home Assistant. By utilizing Home Assistant's native MQTT Auto-Discovery protocol, zero YAML configuration is needed.
+A headless Windows System Tray application, local Web Control Panel, AI-ready REST API, and Home Assistant MQTT Auto-Discovery bridge for iDotMatrix LED pixel displays.
 
-This project packages the core functionality reverse-engineered by [markusressel/idotmatrix-api-client](https://github.com/markusressel/idotmatrix-api-client). The original python library acts as the engine driving the Bluetooth LE communications.
+This project builds on the Bluetooth LE protocol implementation from [markusressel/idotmatrix-api-client](https://github.com/markusressel/idotmatrix-api-client).
 
 ## Key Features
-- **Auto-Discovery:** Devices immediately populate in Home Assistant across the network.
-- **Local Control:** Bypasses cloud requirements, utilizing direct Bluetooth protocol exclusively.
-- **Feature Complete:** Supports Power state, Brightness, RGB Color, Text Rendering, Animated GIFs, Static Images, Clock mechanisms, Chronographs, and built-in Visual Effects.
 
-## Installation
+- **Headless Windows System Tray (`pystray`)**: Runs cleanly in the background via `pythonw.exe` without a console window. Right-click for 1-click **Sync Time Now**, Power, Clock Styles, Image/GIF picker, Manual Override Lock, Screen Flip, BLE Reconnect, and Web UI launch.
+- **Local Web Control Panel (`http://localhost:8099`)**: Dark-themed dashboard for live status, one-click time sync, brightness/color control, Clock & Text Studio, Countdown/Chronograph/Scoreboard/Eco Night Mode, image/GIF thumbnail gallery with drag-and-drop upload, persistent settings editor, and live logs.
+- **Automatic Time Synchronization**: Syncs the display clock on startup, on every Bluetooth reconnect, and periodically on a configurable interval (default: every 60 minutes).
+- **Smart Home Assistant Coexistence**:
+  - Preserves all core MQTT Auto-Discovery entities (`light`, `text`, `image_loader`, `mode`, `effect`, `countdown`, `sync_time`).
+  - Adds **Clock Style Select**, **Image Select Dropdown** (auto-populated from `images/`), **Manual Lock Switch**, **Screen Flip 180° Switch**, and **Bluetooth Connectivity Binary Sensor**.
+  - **Manual Override Lock**: Hold manually selected images/text/effects (indefinitely or for a timer) without being overwritten by periodic Home Assistant fallback automations, while optionally allowing critical alert filenames (e.g., `bomb.gif`) to bypass the lock.
+- **Persistent Hot-Reloadable Config**: All preferences (default clock style/color, text animation settings, Eco schedule, flip state, sync interval) are stored in `config.json`.
+- **AI-Ready REST API**: Full OpenAPI/JSON API at `http://localhost:8099/docs` for automation scripts and AI assistants.
 
-This bridge should be deployed on a host computing environment possessing direct access to a physical Bluetooth adapter. 
+## Installation & Setup
 
-1. **Clone this repository** to your host machine.
-2. Verify Python 3.11+ is installed.
-3. Install the dependencies:
+1. Ensure Python 3.11+ and a Bluetooth LE adapter are available on the host machine.
+2. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-4. Rename the `config.example.json` file to `config.json` and input your MQTT broker credentials and the iDotMatrix display's Bluetooth MAC address.
-5. Execute the startup script:
-   - For Windows users: Run `start_windows.bat`
-   - Alternatively: Run `python idotmatrix_server.py`
+3. Copy `config.example.json` to `config.json` and enter your `device_mac` and MQTT broker details (`mqtt_server`, `mqtt_port`, `mqtt_user`, `mqtt_pass`).
+4. Run the application:
+   - **Windowless (Windows)**: Double-click `run_idotmatrix.pyw` or run `pythonw.exe idotmatrix_server.py`.
+   - **With console output / headless server**: `python idotmatrix_server.py` (add `--no-tray` to run without a tray icon).
+5. Open `http://localhost:8099` in your browser (or click **Open Control Panel** from the system tray icon).
 
-Once executed, the script will instantly interface with your MQTT broker and provision all endpoints inside Home Assistant automatically.
+## Configuration (`config.json`)
 
-## Uploading Images & GIFs
-To render graphics from Home Assistant, place 32x32 `.png` or `.gif` files into the local `images/` directory. Several demo images are included by default. 
+See `config.example.json` for all available fields:
 
-To display them, navigate to the `iDotMatrix` device page inside Home Assistant and type the respective filename (e.g., `demo.gif`) into the "Image Loader" text input entity.
+- `device_mac`, `mqtt_server`, `mqtt_port`, `mqtt_user`, `mqtt_pass`, `image_dir`
+- `web_host` (default `"0.0.0.0"`), `web_port` (default `8099`)
+- `device`: `screen_size` (`16`, `32`, or `64`), `flip_screen`, `auto_sync_interval_minutes`, `sync_on_connect`, `brightness`
+- `clock`: `style`, `color` (`[R, G, B]`), `show_date`, `hour24`
+- `text`: `mode`, `speed`, `font_size`, `color_mode`, `text_color`, `bg_color`
+- `eco`: `enabled`, `start_hour`, `start_minute`, `end_hour`, `end_minute`, `brightness`
+- `image`: `resize_mode` (`FILL`, `FIT`, `STRETCH`), `palletize`
+- `override`: `locked`, `lock_until`, `allow_critical_alerts`
+
+## REST API Overview
+
+Interactive API docs are available at `http://localhost:8099/docs`:
+
+- `GET /api/status` — Live BLE/MQTT state, current display mode, and available enum options
+- `POST /api/sync-time` — Immediate BLE clock synchronization
+- `POST /api/power` — Toggle power, set brightness (5–100), or fill solid RGB color
+- `POST /api/clock` — Display clock with custom style/color and optionally save as default
+- `POST /api/text` — Display animated text with custom mode/speed/font/colors
+- `POST /api/image` — Display an image/GIF from `images/` or `"clear"` to return to Clock
+- `GET /api/images`, `POST /api/images/upload`, `DELETE /api/images/{filename}` — Manage media library
+- `POST /api/effect`, `/api/countdown`, `/api/chronograph`, `/api/scoreboard`, `/api/eco`, `/api/flip`
+- `POST /api/override` — Enable/disable/time-limit the Manual Override Lock
+- `GET /api/settings`, `PUT /api/settings` — Read (secrets masked) or update configuration
+- `GET /api/logs` — Fetch recent application logs
