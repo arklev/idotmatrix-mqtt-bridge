@@ -61,6 +61,8 @@ class TrayManager:
         self._icon: Optional[pystray.Icon] = None
         self._thread: Optional[threading.Thread] = None
         self._last_visual_state: Optional[tuple] = None
+        self._lock = threading.Lock()
+        self._ready = False
 
     def start(self) -> None:
         """Starts the tray icon thread and subscribes to controller state updates."""
@@ -80,14 +82,20 @@ class TrayManager:
         self._thread.start()
         self.logger.info("System tray icon started")
 
+    def _setup_icon(self, icon: pystray.Icon) -> None:
+        icon.visible = True
+        self._ready = True
+        self.refresh()
+
     def _run(self) -> None:
         try:
             if self._icon is not None:
-                self._icon.run()
+                self._icon.run(setup=self._setup_icon)
         except Exception as exc:
             self.logger.error("System tray loop crashed: %s", exc)
 
     def stop(self) -> None:
+        self._ready = False
         if self._icon is not None:
             try:
                 self._icon.stop()
@@ -95,22 +103,25 @@ class TrayManager:
                 pass
 
     def refresh(self) -> None:
-        if self._icon is None:
+        if not self._ready or self._icon is None:
             return
-        ble = self.controller.is_ble_connected()
-        locked = self.controller.is_override_locked()
-        power = self.controller.power_on
-        mode = self.controller.current_mode
-        visual_key = (ble, locked, power)
-        if visual_key != self._last_visual_state:
-            self._last_visual_state = visual_key
-            try:
-                self._icon.icon = render_tray_icon(ble, locked, power)
-            except Exception:
-                pass
-        lock_label = "Locked" if locked else "HA Auto"
-        ble_label = "Connected" if ble else "Disconnected"
-        self._icon.title = f"iDotMatrix | BLE: {ble_label} | {mode} | {lock_label}"[:127]
+        with self._lock:
+            if not self._ready or self._icon is None:
+                return
+            ble = self.controller.is_ble_connected()
+            locked = self.controller.is_override_locked()
+            power = self.controller.power_on
+            mode = self.controller.current_mode
+            visual_key = (ble, locked, power)
+            if visual_key != self._last_visual_state:
+                self._last_visual_state = visual_key
+                try:
+                    self._icon.icon = render_tray_icon(ble, locked, power)
+                except Exception:
+                    pass
+            lock_label = "Locked" if locked else "HA Auto"
+            ble_label = "Connected" if ble else "Disconnected"
+            self._icon.title = f"iDotMatrix | BLE: {ble_label} | {mode} | {lock_label}"[:127]
 
     def _dispatch(self, coro_factory: Any) -> None:
         loop = self.controller.loop

@@ -320,4 +320,12 @@ def create_app(controller: IDotMatrixController) -> FastAPI:
     async def get_logs(limit: int = Query(default=200, ge=1, le=300)) -> JSONResponse:
         return JSONResponse({"logs": controller.get_logs(limit=limit)})
 
+    @app.post("/api/shutdown")
+    async def shutdown() -> Dict[str, str]:
+        import asyncio
+
+        loop = asyncio.get_running_loop()
+        loop.call_later(0.05, controller.request_shutdown)
+        return {"status": "shutting_down"}
+
     return app
